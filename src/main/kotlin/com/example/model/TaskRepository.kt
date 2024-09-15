@@ -1,9 +1,14 @@
 package com.example.model
 
-import com.example.Priority
-import com.example.Task
 import java.lang.IllegalStateException
 
+/**
+ *  The reason we added this folder is to ensure dynamic Routes rather than having call responses to each of the below cases:
+ *      - Allowing us to add gateways; and
+ *      - Add GET, POST, DELETE routes for extension purposes
+ *
+ *  The additional functionality by way of the functions, allows us to extend upon the 'mutableList'
+ */
 object TaskRepository {
     private val tasks = mutableListOf(
         Task("cleaning", "Clean the house", Priority.Low),
@@ -27,5 +32,9 @@ object TaskRepository {
             throw IllegalStateException("Cannot duplicate task names!")
         }
         tasks.add(task)
+    }
+
+    fun removeTask(name: String): Boolean {
+        return tasks.removeIf { it.name == name }
     }
 }
