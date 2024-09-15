@@ -1,0 +1,87 @@
+package com.example.model
+
+import com.example.Priority
+import com.example.Task
+import com.example.model.TaskRepository
+import io.ktor.http.*
+import io.ktor.serialization.*
+import io.ktor.server.application.*
+import io.ktor.server.http.content.*
+import io.ktor.server.request.*
+import io.ktor.server.response.*
+import io.ktor.server.routing.*
+import java.lang.IllegalStateException
+
+fun Application.configureRouting() {
+    routing {
+        staticResources("static", "static")
+
+        /*
+            Pre TaskRepository Implementation -> don't forget to ensure that after routing, you have route
+             */
+//        get("/tasks"){
+
+
+//            call.respond(
+//                listOf(
+//                    Task("cleaning", "Clean the house", Priority.Low),
+//                    Task("gardening", "Mow the Lawn", Priority.Medium),
+//                    Task("shopping", "Buy the groceries", Priority.High),
+//                    Task("painting", "Paint the fence", Priority.Medium)
+//                )
+//            )
+
+            // updated implementation
+            route("/tasks") {
+                get {
+                    val tasks = TaskRepository.allTasks()
+                    call.respond(tasks)
+                }
+            }
+
+            get("/byName/{taskName}") {
+                val name = call.parameters["taskName"]
+                if (name == null) {
+                    call.respond(HttpStatusCode.BadRequest)
+                    return@get
+                }
+
+                val task = TaskRepository.tasksByName(name)
+                if (task == null) {
+                    call.respond(HttpStatusCode.NotFound)
+                    return@get
+                }
+                call.respond(task)
+            }
+            get("/byPriority/{priority}") {
+                val priorityAsText = call.parameters["priority"]
+                if (priorityAsText == null) {
+                    call.respond(HttpStatusCode.BadRequest)
+                    return@get
+                }
+                try {
+                    val priority = Priority.valueOf(priorityAsText)
+                    val tasks = TaskRepository.tasksByPriority(priority)
+
+                    if (tasks.isEmpty()) {
+                        call.respond(HttpStatusCode.NotFound)
+                        return@get
+                    }
+                    call.respond(tasks)
+                } catch (ex: IllegalArgumentException) {
+                    call.respond(HttpStatusCode.BadRequest)
+                }
+            }
+        post {
+            try {
+                val task = call.receive<Task>()
+                TaskRepository.addTask(task)
+                call.respond(HttpStatusCode.NoContent)
+            } catch (ex: IllegalStateException) {
+                call.respond(HttpStatusCode.BadRequest)
+            } catch (ex: JsonConvertException) {
+                call.respond(HttpStatusCode.BadRequest)
+            }
+        }
+        }
+}
